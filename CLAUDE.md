@@ -17,7 +17,7 @@ Jeu de soirée « à qui est cette photo ? ». Flutter (Android + web), Supabase
 - `lib/screens/home_screen.dart` : pseudo, créer ou rejoindre.
 - `lib/screens/lobby_screen.dart` : écran du salon ; affiche le lobby (code, joueurs, réglage photos/joueur, lancement) ou `PickingView` selon le statut.
 - `lib/screens/picking_view.dart` : tirage + veto (Refuser / Garder), miniatures retirables, joueurs prêts, bouton « Lancer les manches » pour l'hôte.
-- `lib/services/photo_source*.dart` : source de photos par import conditionnel — `photo_manager` sur Android (galerie entière), `image_picker` sur web (lot choisi). Réduction ~1080 px JPEG q80 faite par la plateforme.
+- `lib/services/photo_source*.dart` : source de photos par import conditionnel — `photo_manager` sur Android (galerie entière), `image_picker` sur web (lot choisi, 40 max). Réduction ~1080 px JPEG q80 : thumbnail natif sur Android ; sur web, une photo à la fois via canvas au moment du tirage (réduire tout le lot à la sélection faisait planter l'onglet mobile, écran blanc).
 - `lib/models/photo.dart` : MyPhoto.
 - `android/app/src/main/AndroidManifest.xml` : seul fichier Android commité (INTERNET + permissions photos) ; le reste est généré par `flutter create` en CI.
 - `supabase/01_schema.sql` : schéma complet + RLS + Realtime + Storage.
