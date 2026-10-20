@@ -21,6 +21,7 @@ Jeu de soirée « à qui est cette photo ? ». Flutter (Android + web), Supabase
 - `lib/models/photo.dart` : MyPhoto.
 - `android/app/src/main/AndroidManifest.xml` : seul fichier Android commité (INTERNET + permissions photos) ; le reste est généré par `flutter create` en CI.
 - `supabase/01_schema.sql` : schéma complet + RLS + Realtime + Storage.
+- `supabase/02_cleanup.sql` : nettoyage des photos (l'hôte peut effacer les fichiers de son salon ; RPC `pr_my_stale_photo_paths` / `pr_delete_my_stale_rooms` pour les salons de plus de 6 h).
 
 ## Règles de travail
 - Toujours montrer les changements et attendre le feu vert avant de pousser.
@@ -36,6 +37,9 @@ Jeu de soirée « à qui est cette photo ? ». Flutter (Android + web), Supabase
 - Site web : https://foclabroc.github.io/photo_roulette/ (Pages en source GitHub Actions, repo public).
 - Le code n'est pas compilé avant push (pas de SDK Flutter dans l'environnement de Claude) : la CI fait foi.
 
+- Nettoyage des fichiers : l'hôte qui ferme efface toutes les photos du salon ; un joueur qui part ou est exclu voit ses photos effacées ; à chaque ouverture de l'accueil, ménage silencieux des salons de plus de 6 h (mes photos + celles des salons dont je suis l'hôte). Supabase interdit d'effacer des fichiers en SQL, d'où ce passage par l'appli. `deleteRoomFiles` à appeler aussi en fin de partie (podium).
+
 ## Prochaines étapes
 1. Partie : tirage des manches par l'hôte (RPC qui mélange les photos), affichage photo, vote avec chrono, révélation, scores.
-2. Podium et ménage des fichiers du bucket en fin de partie (les fichiers d'un joueur qui quitte restent pour l'instant).
+2. Podium, puis appel de `deleteRoomFiles` en fin de partie.
+3. Cache des photos côté téléphone pendant la partie (limiter la bande passante, 5 Go/mois en gratuit).

@@ -27,6 +27,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadName();
+    // Ménage silencieux des photos des vieux salons laissés ouverts.
+    _service.cleanupStale();
   }
 
   Future<void> _loadName() async {

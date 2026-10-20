@@ -307,6 +307,7 @@ create policy pr_photos_storage_delete on storage.objects
     bucket_id = 'pr-photos' and owner_id = auth.uid()::text
   );
 
--- ---------- Ménage automatique (optionnel) ----------------------------
--- Si l'extension pg_cron est activée (Database > Extensions), décommente :
--- select cron.schedule('pr-cleanup', '0 * * * *', $$select public.pr_cleanup_old_rooms()$$);
+-- ---------- Ménage ----------------------------------------------------
+-- Ne pas planifier pr_cleanup_old_rooms avec pg_cron : supprimer les salons en SQL
+-- laisserait leurs fichiers orphelins dans le Storage. Le ménage passe par l'appli
+-- (voir 02_cleanup.sql).
