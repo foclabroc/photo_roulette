@@ -21,6 +21,8 @@ Jeu de soirée « à qui est cette photo ? ». Flutter (Android + web), Supabase
 - `lib/models/photo.dart` : MyPhoto.
 - `android/app/src/main/AndroidManifest.xml` : seul fichier Android commité (INTERNET + permissions photos) ; le reste est généré par `flutter create` en CI.
 - `supabase/01_schema.sql` : schéma complet + RLS + Realtime + Storage.
+- `lib/utils/last_room.dart` : dernier salon mémorisé (shared_preferences) pour la reprise.
+- `supabase/03_rejoin.sql` : `pr_rejoin_room` (reprise par id) + `pr_join_room` revu (un membre revient quel que soit le statut ; nouveau joueur seulement au lobby, sinon ROOM_STARTED).
 - `supabase/02_cleanup.sql` : nettoyage des photos (l'hôte peut effacer les fichiers de son salon ; RPC `pr_my_stale_photo_paths` / `pr_delete_my_stale_rooms` pour les salons de plus de 6 h).
 
 ## Règles de travail
@@ -38,6 +40,8 @@ Jeu de soirée « à qui est cette photo ? ». Flutter (Android + web), Supabase
 - Le code n'est pas compilé avant push (pas de SDK Flutter dans l'environnement de Claude) : la CI fait foi.
 
 - Nettoyage des fichiers : l'hôte qui ferme efface toutes les photos du salon ; un joueur qui part ou est exclu voit ses photos effacées ; à chaque ouverture de l'accueil, ménage silencieux des salons de plus de 6 h (mes photos + celles des salons dont je suis l'hôte). Supabase interdit d'effacer des fichiers en SQL, d'où ce passage par l'appli. `deleteRoomFiles` à appeler aussi en fin de partie (podium).
+- Reprise de partie : l'accueil affiche « Partie en cours · CODE → Reprendre » si le dernier salon mémorisé est toujours accessible (plantage, onglet fermé, appli tuée). Mémoire effacée quand on quitte, qu'on est exclu ou que le salon est fermé.
+- Écran blanc web corrigé (c00e6a6) : réduction des photos une à une au tirage.
 
 ## Prochaines étapes
 1. Partie : tirage des manches par l'hôte (RPC qui mélange les photos), affichage photo, vote avec chrono, révélation, scores.

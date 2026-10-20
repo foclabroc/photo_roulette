@@ -36,6 +36,17 @@ class RoomService {
   Future<RoomSession> joinRoom(String code, String name) =>
       _callRoomRpc('pr_join_room', {'p_code': code, 'p_name': name});
 
+  /// Reprise d'une partie mémorisée sur l'appareil (cf. 03_rejoin.sql).
+  /// Renvoie null si la partie n'existe plus ou n'est plus accessible.
+  Future<RoomSession?> rejoinRoom(String roomId) async {
+    if (_client.auth.currentSession == null) return null;
+    try {
+      return await _callRoomRpc('pr_rejoin_room', {'p_room': roomId});
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<RoomSession> _callRoomRpc(
     String fn,
     Map<String, dynamic> params,
@@ -213,6 +224,9 @@ class RoomService {
       return 'Aucun salon en attente avec ce code.';
     }
     if (message.contains('ROOM_FULL')) return 'Ce salon est complet.';
+    if (message.contains('ROOM_STARTED')) {
+      return 'La partie a déjà commencé, trop tard pour rejoindre.';
+    }
     if (message.contains('NAME_REQUIRED')) return 'Choisis un pseudo.';
     if (message.contains('NOT_AUTHENTICATED')) {
       return 'Connexion impossible, réessaie.';

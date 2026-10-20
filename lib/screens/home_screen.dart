@@ -5,6 +5,7 @@ import '../config.dart';
 import '../models/room.dart';
 import '../services/room_service.dart';
 import '../theme.dart';
+import '../utils/last_room.dart';
 import '../utils/room_code.dart';
 import 'lobby_screen.dart';
 
@@ -22,13 +23,52 @@ class _HomeScreenState extends State<HomeScreen> {
   final _nameCtrl = TextEditingController();
   final _codeCtrl = TextEditingController();
   bool _busy = false;
+  RoomSession? _resume;
 
   @override
   void initState() {
     super.initState();
     _loadName();
-    // Ménage silencieux des photos des vieux salons laissés ouverts.
-    _service.cleanupStale();
+    _startup();
+  }
+
+  Future<void> _startup() async {
+    // Ménage silencieux des photos des vieux salons laissés ouverts,
+    // puis recherche d'une partie en cours à reprendre.
+    await _service.cleanupStale();
+    await _checkResume();
+  }
+
+  /// Partie mémorisée sur l'appareil encore accessible ? (plantage, onglet fermé…)
+  Future<void> _checkResume() async {
+    final roomId = await LastRoomStore.read();
+    RoomSession? session;
+    if (roomId != null) {
+      session = await _service.rejoinRoom(roomId);
+      if (session == null) await LastRoomStore.clear();
+    }
+    if (mounted) setState(() => _resume = session);
+  }
+
+  Future<void> _openLobby(RoomSession session) async {
+    await LastRoomStore.save(session.roomId);
+    if (!mounted) return;
+    setState(() => _resume = null);
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => LobbyScreen(session: session)),
+    );
+    await _checkResume();
+  }
+
+  Future<void> _resumeGame() async {
+    final session = _resume;
+    if (session == null || _busy) return;
+    setState(() => _busy = true);
+    try {
+      await _openLobby(session);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _loadName() async {
@@ -78,9 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
       await prefs.setString(_prefName, name);
       final session = await action();
       if (!mounted) return;
-      await Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => LobbyScreen(session: session)),
-      );
+      await _openLobby(session);
     } on RoomException catch (e) {
       _showError(e.message);
     } catch (e) {
@@ -127,6 +165,31 @@ class _HomeScreenState extends State<HomeScreen> {
                         ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
                   const SizedBox(height: 36),
+                  if (_resume != null) ...[
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              'Partie en cours · ${_resume!.code}',
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 12),
+                            FilledButton.icon(
+                              onPressed: _busy ? null : _resumeGame,
+                              icon: const Icon(Icons.replay_rounded),
+                              label: const Text('Reprendre la partie'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
                   TextField(
                     controller: _nameCtrl,
                     enabled: !_busy,

@@ -7,6 +7,7 @@ import '../config.dart';
 import '../models/room.dart';
 import '../services/room_service.dart';
 import '../theme.dart';
+import '../utils/last_room.dart';
 import 'picking_view.dart';
 
 class LobbyScreen extends StatefulWidget {
@@ -117,6 +118,7 @@ class _LobbyScreenState extends State<LobbyScreen> with WidgetsBindingObserver {
   void _exit(String message) {
     if (_leaving || !mounted) return;
     _leaving = true;
+    LastRoomStore.clear();
     final messenger = ScaffoldMessenger.of(context);
     Navigator.of(context).pop();
     messenger.showSnackBar(SnackBar(content: Text(message)));
@@ -129,7 +131,7 @@ class _LobbyScreenState extends State<LobbyScreen> with WidgetsBindingObserver {
         title: const Text('Quitter le salon ?'),
         content: Text(_isHost
             ? 'Tu es l\'hôte : la partie sera fermée pour tout le monde.'
-            : 'Tu pourras revenir avec le code tant que la partie n\'a pas commencé.'),
+            : 'Tes photos seront effacées. Tu pourras revenir avec le code tant que la partie n\'a pas commencé.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -142,6 +144,7 @@ class _LobbyScreenState extends State<LobbyScreen> with WidgetsBindingObserver {
     );
     if (ok != true || !mounted) return;
     _leaving = true;
+    await LastRoomStore.clear();
     try {
       await _service.leaveRoom(widget.session, isHost: _isHost);
     } catch (_) {
