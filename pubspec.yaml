@@ -1,7 +1,7 @@
 name: photo_roulette
 description: "Photo Roulette — devine à qui appartient la photo !"
 publish_to: 'none'
-version: 0.3.0+3
+version: 0.3.1+4
 
 environment:
   sdk: '>=3.5.0 <4.0.0'

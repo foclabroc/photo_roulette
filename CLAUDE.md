@@ -57,7 +57,7 @@ Jeu de soirée « à qui est cette photo ? ». Flutter (Android + web), Supabase
 - Écran blanc web corrigé (c00e6a6) : réduction des photos une à une au tirage.
 
 - v0.3.0 : mise à jour Android intégrée (comme Pixel Trade), CHANGELOG, apk.yml avec release.
-- Partie complète (v0.3.0, pas encore publiée en APK) : manches, vote 15 s, points (100 + bonus rapidité ≤ 50 ; propriétaire +20 par joueur trompé), podium, cache des photos.
+- v0.3.0 publiée en APK (sans la partie). Partie complète en v0.3.1 : manches, vote 15 s, points (100 + bonus rapidité ≤ 50 ; propriétaire +20 par joueur trompé), podium, cache des photos.
 - Limite connue : le chemin des photos contient l'id du propriétaire, un tricheur motivé pourrait le lire via l'API ; les points, eux, sont calculés côté serveur.
 
 ## Prochaines étapes

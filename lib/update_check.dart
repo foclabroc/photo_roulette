@@ -18,7 +18,7 @@ import 'theme.dart';
 // ═══════════════════════════════════════════════════════════════════════════
 
 /// Version de l'application (identique au pubspec.yaml, sans le « +N »).
-const kPhotoRouletteVersion = '0.3.0';
+const kPhotoRouletteVersion = '0.3.1';
 
 const _apiLatest =
     'https://api.github.com/repos/foclabroc/photo_roulette/releases/latest';
