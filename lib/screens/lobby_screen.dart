@@ -7,6 +7,7 @@ import '../config.dart';
 import '../models/room.dart';
 import '../services/room_service.dart';
 import '../theme.dart';
+import 'picking_view.dart';
 
 class LobbyScreen extends StatefulWidget {
   const LobbyScreen({super.key, required this.session});
@@ -160,14 +161,31 @@ class _LobbyScreenState extends State<LobbyScreen> {
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 480),
-                    child: Column(
+                    child: switch (room.status) {
+                      RoomStatus.lobby => _buildLobby(theme, room),
+                      RoomStatus.picking => PickingView(
+                          session: widget.session,
+                          room: room,
+                          players: _players,
+                          isHost: _isHost,
+                          service: _service,
+                        ),
+                      _ => const Center(
+                          child: _InfoBanner('Les manches arrivent bientôt…'),
+                        ),
+                    },
+                  ),
+                ),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildLobby(ThemeData theme, Room room) {
+    return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         _CodeCard(code: widget.session.code, onCopy: _copyCode),
-                        if (room.status != RoomStatus.lobby)
-                          const _InfoBanner(
-                            'La partie démarre… (sélection des photos : à venir)',
-                          ),
                         Padding(
                           padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
                           child: Text(
@@ -198,11 +216,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
                           onChangePhotos: _changePhotos,
                         ),
                       ],
-                    ),
-                  ),
-                ),
-              ),
-      ),
     );
   }
 }

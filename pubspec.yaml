@@ -1,7 +1,7 @@
 name: photo_roulette
 description: "Photo Roulette — devine à qui appartient la photo !"
 publish_to: 'none'
-version: 0.1.0+1
+version: 0.2.0+2
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -11,6 +11,8 @@ dependencies:
     sdk: flutter
   supabase_flutter: ^2.8.0
   shared_preferences: ^2.3.0
+  photo_manager: ^3.6.0
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:

@@ -1,5 +1,9 @@
+import 'dart:math';
+import 'dart:typed_data';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../models/photo.dart';
 import '../models/room.dart';
 
 class RoomException implements Exception {
@@ -79,6 +83,63 @@ class RoomService {
   Future<void> startGame(String roomId) => _client
       .from('pr_rooms')
       .update({'status': RoomStatus.picking.name}).eq('id', roomId);
+
+  Future<void> startRounds(String roomId) => _client
+      .from('pr_rooms')
+      .update({'status': RoomStatus.playing.name}).eq('id', roomId);
+
+  // ---------- Photos ----------
+
+  static const photoBucket = 'pr-photos';
+  final _random = Random();
+
+  Future<List<MyPhoto>> myPhotos(String playerId) async {
+    final rows = await _client
+        .from('pr_photos')
+        .select('id, storage_path')
+        .eq('owner_player_id', playerId)
+        .order('created_at');
+    return rows
+        .map((r) => MyPhoto(
+              id: r['id'] as String,
+              path: r['storage_path'] as String,
+            ))
+        .toList();
+  }
+
+  /// Envoie la photo dans <room_id>/<player_id>/ puis l'enregistre en base.
+  Future<MyPhoto> uploadPhoto(RoomSession session, Uint8List bytes) async {
+    final name =
+        '${DateTime.now().microsecondsSinceEpoch}_${_random.nextInt(1000000)}.jpg';
+    final path = '${session.roomId}/${session.playerId}/$name';
+    await _client.storage.from(photoBucket).uploadBinary(
+          path,
+          bytes,
+          fileOptions: const FileOptions(contentType: 'image/jpeg'),
+        );
+    final row = await _client
+        .from('pr_photos')
+        .insert({
+          'room_id': session.roomId,
+          'owner_player_id': session.playerId,
+          'storage_path': path,
+        })
+        .select('id')
+        .single();
+    return MyPhoto(id: row['id'] as String, path: path, bytes: bytes);
+  }
+
+  Future<void> deletePhoto(MyPhoto photo) async {
+    await _client.from('pr_photos').delete().eq('id', photo.id);
+    await _client.storage.from(photoBucket).remove([photo.path]);
+  }
+
+  Future<String> photoUrl(String path) =>
+      _client.storage.from(photoBucket).createSignedUrl(path, 3600);
+
+  Future<void> setReady(String playerId, bool ready) => _client
+      .from('pr_players')
+      .update({'ready': ready}).eq('id', playerId);
 
   String _translate(String message) {
     if (message.contains('ROOM_NOT_FOUND')) {
