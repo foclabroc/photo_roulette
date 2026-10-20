@@ -31,6 +31,8 @@ Jeu de soirée « à qui est cette photo ? ». Flutter (Android + web), Supabase
 ## État
 - v0.1.0 : squelette — accueil, création / jonction de salon, lobby temps réel. Testé OK sur le web (2 joueurs).
 - v0.2.0 : sélection des photos (tirage + veto), upload dans `pr-photos`, drapeau `ready` synchronisé, statut `playing` posé par l'hôte quand tout le monde est prêt. Bouton d'exclusion limité au lobby. Pas de nouveau SQL.
+- Correctifs (6d8a338) : liste des joueurs dédoublonnée par id (le flux Realtime renvoyait parfois 2× la même ligne) ; reconnexion automatique des flux après une coupure (erreur 1006 fréquente sur mobile), bandeau « reconnexion… ».
+- Test à plusieurs : deux onglets du même navigateur = même session anonyme = même joueur ; utiliser un autre appareil ou un onglet privé.
 - Site web : https://foclabroc.github.io/photo_roulette/ (Pages en source GitHub Actions, repo public).
 - Le code n'est pas compilé avant push (pas de SDK Flutter dans l'environnement de Claude) : la CI fait foi.
 
