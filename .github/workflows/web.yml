@@ -1,0 +1,56 @@
+name: Web (GitHub Pages)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # Ne recrée que les fichiers manquants (dossiers web/ et android/ tant qu'ils ne sont pas commités)
+      - name: Dossiers plateformes manquants
+        run: |
+          flutter create . --platforms=web,android --project-name photo_roulette --org com.foclabroc
+          rm -f test/widget_test.dart  # test généré par le modèle, inutile ici
+
+      - run: flutter pub get
+      - run: flutter test
+
+      - name: Build web
+        run: >
+          flutter build web --release
+          --base-href /photo_roulette/
+          --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
