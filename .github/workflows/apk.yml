@@ -41,9 +41,9 @@ jobs:
             echo "::error::Secret DEBUG_KEYSTORE_B64 manquant (Settings > Secrets and variables > Actions)"
             exit 1
           fi
-          # Le build release de Flutter signe avec la clé debug par défaut : on y place la tienne
-          mkdir -p ~/.android
-          echo "$KEY" | base64 -d > ~/.android/debug.keystore
+          # Clé hors du dépôt, dans le dossier temporaire de la machine GitHub (effacé après)
+          echo "$KEY" | base64 -d > "$RUNNER_TEMP/foc.keystore"
+          echo "FOC_KEYSTORE=$RUNNER_TEMP/foc.keystore" >> "$GITHUB_ENV"
 
       - uses: actions/setup-java@v4
         with:
@@ -59,6 +59,30 @@ jobs:
         run: |
           flutter create . --platforms=web,android --project-name photo_roulette --org com.foclabroc
           rm -f test/widget_test.dart  # test généré par le modèle, inutile ici
+
+      - name: Signature explicite (ne dépend pas de l'emplacement de la clé debug)
+        run: |
+          G=android/app/build.gradle.kts
+          [ -f "$G" ] || { echo "::error::$G introuvable"; exit 1; }
+          cat >> "$G" <<'GRADLE'
+
+          // ── Ajouté par apk.yml : signature avec la clé de foclabroc (secret DEBUG_KEYSTORE_B64) ──
+          android {
+              signingConfigs {
+                  create("foclabroc") {
+                      storeFile = file(System.getenv("FOC_KEYSTORE")!!)
+                      storePassword = "android"
+                      keyAlias = "androiddebugkey"
+                      keyPassword = "android"
+                  }
+              }
+              buildTypes {
+                  getByName("release") {
+                      signingConfig = signingConfigs.getByName("foclabroc")
+                  }
+              }
+          }
+          GRADLE
 
       - run: flutter pub get
 

@@ -31,7 +31,7 @@ Jeu de soirée « à qui est cette photo ? ». Flutter (Android + web), Supabase
 - Pas de Flutter ici : syntaxe vérifiable avec `tree-sitter-language-pack` (Python) ; compilation réelle par la CI.
 - Web : `web.yml` à chaque push sur `main`.
 - APK : `apk.yml` à la main (Actions → APK Android → Run workflow, cocher « publier »). Avant : monter la version dans `lib/update_check.dart` (`kPhotoRouletteVersion`) **et** `pubspec.yaml` (`x.y.z+n`) — la CI refuse si elles diffèrent — et ajouter la section au `CHANGELOG.md`. Une release `v<version>` par version.
-- Signature : secret `DEBUG_KEYSTORE_B64` (même clé que Pixel Trade, empreinte vérifiée en CI), placé en `~/.android/debug.keystore` (le build release Flutter par défaut signe avec la clé debug).
+- Signature : secret `DEBUG_KEYSTORE_B64` (même clé que Pixel Trade, alias `androiddebugkey`, mot de passe `android`, empreinte `457526b6…e38ffb` vérifiée en CI). apk.yml l'écrit dans `$RUNNER_TEMP/foc.keystore` et **ajoute un bloc `signingConfigs` explicite** à la fin du `android/app/build.gradle.kts` généré : la déposer en `~/.android/debug.keystore` ne marche pas sur les machines GitHub (Gradle génère une autre clé debug).
 
 ## Règles de travail
 - Toujours montrer les changements et attendre le feu vert avant de pousser.
