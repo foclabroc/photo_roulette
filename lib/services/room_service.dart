@@ -62,7 +62,16 @@ class RoomService {
       .stream(primaryKey: ['id'])
       .eq('room_id', roomId)
       .order('joined_at', ascending: true)
-      .map((rows) => rows.map(Player.fromMap).toList());
+      .map((rows) {
+        // Le flux Realtime peut renvoyer deux fois la même ligne
+        // (chargement initial + événement reçu juste après) : on dédoublonne par id.
+        final byId = <String, Player>{};
+        for (final row in rows) {
+          final player = Player.fromMap(row);
+          byId[player.id] = player;
+        }
+        return byId.values.toList();
+      });
 
   /// L'hôte qui part ferme le salon ; un joueur qui part retire juste sa ligne.
   Future<void> leaveRoom(RoomSession session, {required bool isHost}) async {
