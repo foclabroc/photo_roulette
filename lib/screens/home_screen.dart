@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -7,6 +8,7 @@ import '../services/room_service.dart';
 import '../theme.dart';
 import '../utils/last_room.dart';
 import '../utils/room_code.dart';
+import '../update_check.dart';
 import 'lobby_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -128,6 +130,13 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _checkUpdate() async {
+    final gate = context.findAncestorStateOfType<UpdateGateState>();
+    final r = await gate?.check(manual: true) ?? 0;
+    if (r == 0) _showError('L\'appli est à jour (v$kPhotoRouletteVersion)');
+    if (r == 2) _showError('Vérification impossible (hors ligne)');
+  }
+
   void _showError(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -239,6 +248,21 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 24),
                     const Center(child: CircularProgressIndicator()),
                   ],
+                  const SizedBox(height: 32),
+                  if (kIsWeb)
+                    Text('Photo Roulette v$kPhotoRouletteVersion',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: Colors.white38))
+                  else
+                    TextButton(
+                      onPressed: _checkUpdate,
+                      child: Text(
+                        'Photo Roulette v$kPhotoRouletteVersion — vérifier les mises à jour',
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: Colors.white38),
+                      ),
+                    ),
                 ],
               ),
             ),

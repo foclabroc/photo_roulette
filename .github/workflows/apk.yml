@@ -1,18 +1,54 @@
+# Photo Roulette — APK Android compilé par GitHub (bouton « Run workflow » dans l'onglet Actions)
+# L'APK est signé avec TA clé (secret DEBUG_KEYSTORE_B64, la même que Pixel Trade), donc il
+# s'installe par-dessus l'appli déjà installée. Sans ce secret, la compilation s'arrête.
+# Résultat : photo.roulette.V<version>.apk dans « Artifacts » en bas de la page du lancement,
+# et ajouté à la release v<version> si « publier » est coché (l'appli la détecte au démarrage).
 name: APK Android
 
 on:
   workflow_dispatch:
+    inputs:
+      publier:
+        description: "Créer / compléter la release v<version> avec l'APK"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
 
 jobs:
-  build:
+  apk:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
+      - name: Version (pubspec = update_check.dart)
+        id: v
+        run: |
+          V=$(grep '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')
+          C=$(grep "kPhotoRouletteVersion = " lib/update_check.dart | sed "s/.*= '//; s/'.*//")
+          if [ "$V" != "$C" ]; then
+            echo "::error::Version différente : pubspec.yaml = $V, kPhotoRouletteVersion = $C"
+            exit 1
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+
+      - name: Clé de signature
+        env:
+          KEY: ${{ secrets.DEBUG_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "::error::Secret DEBUG_KEYSTORE_B64 manquant (Settings > Secrets and variables > Actions)"
+            exit 1
+          fi
+          # Le build release de Flutter signe avec la clé debug par défaut : on y place la tienne
+          mkdir -p ~/.android
+          echo "$KEY" | base64 -d > ~/.android/debug.keystore
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "21"
 
       - uses: subosito/flutter-action@v2
         with:
@@ -26,14 +62,40 @@ jobs:
 
       - run: flutter pub get
 
-      # Signature debug pour l'instant ; clé de release à ajouter via les secrets (jamais commitée)
       - name: Build APK
         run: >
           flutter build apk --release
           --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }}
           --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
 
+      - name: Vérification de la signature (même clé que tes autres applis)
+        run: |
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          "$APKSIGNER" verify --print-certs build/app/outputs/flutter-apk/app-release.apk | tee certs.txt
+          grep -qi "457526b68d8f904b3c1dca7a82bfd4508106131f822d4a1c276f667e7fe38ffb" certs.txt \
+            || { echo "::error::L'APK n'est pas signé avec ta clé : il ne s'installerait pas par-dessus l'appli"; exit 1; }
+
+      - name: Nom de l'APK
+        run: cp build/app/outputs/flutter-apk/app-release.apk "photo.roulette.V${{ steps.v.outputs.version }}.apk"
+
       - uses: actions/upload-artifact@v4
         with:
-          name: photo_roulette-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: photo.roulette.V${{ steps.v.outputs.version }}
+          path: photo.roulette.V${{ steps.v.outputs.version }}.apk
+
+      - name: Release
+        if: ${{ inputs.publier }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V=${{ steps.v.outputs.version }}
+          # notes de version = la section « ## vX.Y.Z » du CHANGELOG
+          awk -v v="## v$V" 'index($0, v) == 1 {on=1; next} on && /^## v/ {exit} on {print}' CHANGELOG.md > notes.md
+          { echo; echo "---"; echo "📲 **Installation** : télécharge \`photo.roulette.V$V.apk\` ci-dessous et ouvre-le sur ton téléphone Android."; \
+            echo "🌐 **Version web** : https://foclabroc.github.io/photo_roulette/"; } >> notes.md
+          if gh release view "v$V" >/dev/null 2>&1; then
+            gh release edit "v$V" --notes-file notes.md
+          else
+            gh release create "v$V" --title "Photo Roulette v$V" --notes-file notes.md --latest
+          fi
+          gh release upload "v$V" "photo.roulette.V$V.apk" --clobber

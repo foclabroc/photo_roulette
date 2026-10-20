@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Réseau (Supabase) : absent du manifeste release par défaut -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Mise à jour dans l'appli : ouverture de l'installateur Android -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- Lecture de la galerie pour le tirage au hasard -->
     <uses-permission

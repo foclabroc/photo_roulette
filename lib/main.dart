@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config.dart';
 import 'screens/home_screen.dart';
 import 'theme.dart';
+import 'update_check.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,7 +27,7 @@ class PhotoRouletteApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),
       home: AppConfig.isConfigured
-          ? const HomeScreen()
+          ? const UpdateGate(child: HomeScreen())
           : const _MissingConfigScreen(),
     );
   }

@@ -19,11 +19,19 @@ Jeu de soirée « à qui est cette photo ? ». Flutter (Android + web), Supabase
 - `lib/screens/picking_view.dart` : tirage + veto (Refuser / Garder), miniatures retirables, joueurs prêts, bouton « Lancer les manches » pour l'hôte.
 - `lib/services/photo_source*.dart` : source de photos par import conditionnel — `photo_manager` sur Android (galerie entière), `image_picker` sur web (lot choisi, 40 max). Réduction ~1080 px JPEG q80 : thumbnail natif sur Android ; sur web, une photo à la fois via canvas au moment du tirage (réduire tout le lot à la sélection faisait planter l'onglet mobile, écran blanc).
 - `lib/models/photo.dart` : MyPhoto.
+- `lib/update_check.dart` : mise à jour Android, copiée de Pixel Trade (sans version minimale ni maintenance) : `kPhotoRouletteVersion`, lecture de `releases/latest` sur GitHub, version lue dans le nom `photo.roulette.V<x.y.z>.apk`, téléchargement + installateur (open_filex). `UpdateGate` enveloppe l'accueil ; vérification manuelle en bas de l'accueil.
+- `CHANGELOG.md` : section `## vX.Y.Z` = notes de la release.
 - `android/app/src/main/AndroidManifest.xml` : seul fichier Android commité (INTERNET + permissions photos) ; le reste est généré par `flutter create` en CI.
 - `supabase/01_schema.sql` : schéma complet + RLS + Realtime + Storage.
 - `lib/utils/last_room.dart` : dernier salon mémorisé (shared_preferences) pour la reprise.
 - `supabase/03_rejoin.sql` : `pr_rejoin_room` (reprise par id) + `pr_join_room` revu (un membre revient quel que soit le statut ; nouveau joueur seulement au lobby, sinon ROOM_STARTED).
 - `supabase/02_cleanup.sql` : nettoyage des photos (l'hôte peut effacer les fichiers de son salon ; RPC `pr_my_stale_photo_paths` / `pr_delete_my_stale_rooms` pour les salons de plus de 6 h).
+
+## Compiler et publier
+- Pas de Flutter ici : syntaxe vérifiable avec `tree-sitter-language-pack` (Python) ; compilation réelle par la CI.
+- Web : `web.yml` à chaque push sur `main`.
+- APK : `apk.yml` à la main (Actions → APK Android → Run workflow, cocher « publier »). Avant : monter la version dans `lib/update_check.dart` (`kPhotoRouletteVersion`) **et** `pubspec.yaml` (`x.y.z+n`) — la CI refuse si elles diffèrent — et ajouter la section au `CHANGELOG.md`. Une release `v<version>` par version.
+- Signature : secret `DEBUG_KEYSTORE_B64` (même clé que Pixel Trade, empreinte vérifiée en CI), placé en `~/.android/debug.keystore` (le build release Flutter par défaut signe avec la clé debug).
 
 ## Règles de travail
 - Toujours montrer les changements et attendre le feu vert avant de pousser.
@@ -42,6 +50,8 @@ Jeu de soirée « à qui est cette photo ? ». Flutter (Android + web), Supabase
 - Nettoyage des fichiers : l'hôte qui ferme efface toutes les photos du salon ; un joueur qui part ou est exclu voit ses photos effacées ; à chaque ouverture de l'accueil, ménage silencieux des salons de plus de 6 h (mes photos + celles des salons dont je suis l'hôte). Supabase interdit d'effacer des fichiers en SQL, d'où ce passage par l'appli. `deleteRoomFiles` à appeler aussi en fin de partie (podium).
 - Reprise de partie : l'accueil affiche « Partie en cours · CODE → Reprendre » si le dernier salon mémorisé est toujours accessible (plantage, onglet fermé, appli tuée). Mémoire effacée quand on quitte, qu'on est exclu ou que le salon est fermé.
 - Écran blanc web corrigé (c00e6a6) : réduction des photos une à une au tirage.
+
+- v0.3.0 : mise à jour Android intégrée (comme Pixel Trade), CHANGELOG, apk.yml avec release.
 
 ## Prochaines étapes
 1. Partie : tirage des manches par l'hôte (RPC qui mélange les photos), affichage photo, vote avec chrono, révélation, scores.
