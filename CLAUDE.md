@@ -25,6 +25,11 @@ Jeu de soirée « à qui est cette photo ? ». Flutter (Android + web), Supabase
 - `supabase/01_schema.sql` : schéma complet + RLS + Realtime + Storage.
 - `lib/utils/last_room.dart` : dernier salon mémorisé (shared_preferences) pour la reprise.
 - `supabase/03_rejoin.sql` : `pr_rejoin_room` (reprise par id) + `pr_join_room` revu (un membre revient quel que soit le statut ; nouveau joueur seulement au lobby, sinon ROOM_STARTED).
+- `lib/screens/game_view.dart` : manche en cours (photo, chrono local calé sur la durée serveur, vote, révélation, classement), bouton hôte « Manche suivante » / « Voir le podium ». Fin du chrono → `pr_reveal_round` (réessai si TOO_EARLY).
+- `lib/screens/podium_view.dart` : classement final ; l'hôte efface les photos (`deleteRoomFiles`) dès l'arrivée.
+- `lib/services/photo_cache.dart` : photos de la partie téléchargées une fois et gardées en mémoire, manche suivante préchargée.
+- `lib/models/round.dart` : GameRound, Vote.
+- `supabase/04_rounds.sql` : colonnes `current_round` / `total_rounds` / `vote_seconds` (rooms), `storage_path` / `ends_at` / `owner_player_id` (rounds, propriétaire rempli à la révélation), `room_id` / `points` (votes) ; RPC `pr_start_rounds` (mélange sans deux photos du même joueur à la suite), `pr_vote` (points calculés serveur, révélation auto quand tout le monde a voté), `pr_reveal_round`, `pr_next_round`, `pr__reveal` (interne) ; `pr_rejoin_room` accepte aussi une partie terminée.
 - `supabase/02_cleanup.sql` : nettoyage des photos (l'hôte peut effacer les fichiers de son salon ; RPC `pr_my_stale_photo_paths` / `pr_delete_my_stale_rooms` pour les salons de plus de 6 h).
 
 ## Compiler et publier
@@ -52,8 +57,9 @@ Jeu de soirée « à qui est cette photo ? ». Flutter (Android + web), Supabase
 - Écran blanc web corrigé (c00e6a6) : réduction des photos une à une au tirage.
 
 - v0.3.0 : mise à jour Android intégrée (comme Pixel Trade), CHANGELOG, apk.yml avec release.
+- Partie complète (v0.3.0, pas encore publiée en APK) : manches, vote 15 s, points (100 + bonus rapidité ≤ 50 ; propriétaire +20 par joueur trompé), podium, cache des photos.
+- Limite connue : le chemin des photos contient l'id du propriétaire, un tricheur motivé pourrait le lire via l'API ; les points, eux, sont calculés côté serveur.
 
 ## Prochaines étapes
-1. Partie : tirage des manches par l'hôte (RPC qui mélange les photos), affichage photo, vote avec chrono, révélation, scores.
-2. Podium, puis appel de `deleteRoomFiles` en fin de partie.
-3. Cache des photos côté téléphone pendant la partie (limiter la bande passante, 5 Go/mois en gratuit).
+1. Tester une vraie partie à 3+ joueurs (web + Android).
+2. Idées : rejouer avec les mêmes joueurs, réglage du chrono par l'hôte, sons / animations de révélation.

@@ -12,6 +12,9 @@ class Room {
     required this.hostId,
     required this.status,
     required this.photosPerPlayer,
+    this.currentRound = -1,
+    this.totalRounds = 0,
+    this.voteSeconds = 15,
   });
 
   final String id;
@@ -19,6 +22,9 @@ class Room {
   final String hostId;
   final RoomStatus status;
   final int photosPerPlayer;
+  final int currentRound;
+  final int totalRounds;
+  final int voteSeconds;
 
   factory Room.fromMap(Map<String, dynamic> map) => Room(
         id: map['id'] as String,
@@ -26,6 +32,9 @@ class Room {
         hostId: map['host_id'] as String,
         status: _parseStatus(map['status'] as String?),
         photosPerPlayer: (map['photos_per_player'] as num?)?.toInt() ?? 5,
+        currentRound: (map['current_round'] as num?)?.toInt() ?? -1,
+        totalRounds: (map['total_rounds'] as num?)?.toInt() ?? 0,
+        voteSeconds: (map['vote_seconds'] as num?)?.toInt() ?? 15,
       );
 }
 

@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/photo.dart';
 import '../models/room.dart';
+import '../models/round.dart';
 
 class RoomException implements Exception {
   const RoomException(this.message);
@@ -162,9 +163,55 @@ class RoomService {
       .from('pr_rooms')
       .update({'status': RoomStatus.picking.name}).eq('id', roomId);
 
-  Future<void> startRounds(String roomId) => _client
-      .from('pr_rooms')
-      .update({'status': RoomStatus.playing.name}).eq('id', roomId);
+  // ---------- Manches (cf. 04_rounds.sql) ----------
+
+  Future<void> startRounds(String roomId) => _rpc('pr_start_rounds', {'p_room': roomId});
+
+  Stream<List<GameRound>> watchRounds(String roomId) => _client
+      .from('pr_rounds')
+      .stream(primaryKey: ['id'])
+      .eq('room_id', roomId)
+      .order('round_index', ascending: true)
+      .map((rows) {
+        final byId = <String, GameRound>{};
+        for (final r in rows) {
+          final round = GameRound.fromMap(r);
+          byId[round.id] = round;
+        }
+        return byId.values.toList()..sort((a, b) => a.index.compareTo(b.index));
+      });
+
+  Stream<List<Vote>> watchVotes(String roomId) => _client
+      .from('pr_votes')
+      .stream(primaryKey: ['round_id', 'voter_player_id'])
+      .eq('room_id', roomId)
+      .map((rows) {
+        final byKey = <String, Vote>{};
+        for (final r in rows) {
+          final v = Vote.fromMap(r);
+          byKey['${v.roundId}|${v.voterId}'] = v;
+        }
+        return byKey.values.toList();
+      });
+
+  Future<void> vote(String roundId, String guessPlayerId) =>
+      _rpc('pr_vote', {'p_round': roundId, 'p_guess': guessPlayerId});
+
+  Future<void> revealRound(String roundId) =>
+      _rpc('pr_reveal_round', {'p_round': roundId});
+
+  Future<void> nextRound(String roomId) => _rpc('pr_next_round', {'p_room': roomId});
+
+  Future<Uint8List> downloadPhoto(String path) =>
+      _client.storage.from(photoBucket).download(path);
+
+  Future<void> _rpc(String fn, Map<String, dynamic> params) async {
+    try {
+      await _client.rpc(fn, params: params);
+    } on PostgrestException catch (e) {
+      throw RoomException(_translate(e.message));
+    }
+  }
 
   // ---------- Photos ----------
 
@@ -224,6 +271,13 @@ class RoomService {
       return 'Aucun salon en attente avec ce code.';
     }
     if (message.contains('ROOM_FULL')) return 'Ce salon est complet.';
+    if (message.contains('ROUND_CLOSED')) return 'Trop tard, la manche est terminée.';
+    if (message.contains('TOO_EARLY')) return 'TOO_EARLY';
+    if (message.contains('NO_PHOTOS')) return 'Aucune photo dans la partie.';
+    if (message.contains('NOT_HOST')) return 'Seul l\'hôte peut faire ça.';
+    if (message.contains('Could not find the function')) {
+      return 'Base pas à jour : lance 04_rounds.sql dans Supabase.';
+    }
     if (message.contains('ROOM_STARTED')) {
       return 'La partie a déjà commencé, trop tard pour rejoindre.';
     }

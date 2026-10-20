@@ -8,7 +8,9 @@ import '../models/room.dart';
 import '../services/room_service.dart';
 import '../theme.dart';
 import '../utils/last_room.dart';
+import 'game_view.dart';
 import 'picking_view.dart';
+import 'podium_view.dart';
 
 class LobbyScreen extends StatefulWidget {
   const LobbyScreen({super.key, required this.session});
@@ -143,6 +145,12 @@ class _LobbyScreenState extends State<LobbyScreen> with WidgetsBindingObserver {
       ),
     );
     if (ok != true || !mounted) return;
+    await _leaveNow();
+  }
+
+  /// Quitte sans confirmation (podium : la partie est finie).
+  Future<void> _leaveNow() async {
+    if (_leaving) return;
     _leaving = true;
     await LastRoomStore.clear();
     try {
@@ -226,8 +234,20 @@ class _LobbyScreenState extends State<LobbyScreen> with WidgetsBindingObserver {
                           isHost: _isHost,
                           service: _service,
                         ),
-                      _ => const Center(
-                          child: _InfoBanner('Les manches arrivent bientôt…'),
+                      RoomStatus.playing => GameView(
+                          session: widget.session,
+                          room: room,
+                          players: _players,
+                          isHost: _isHost,
+                          service: _service,
+                        ),
+                      RoomStatus.finished => PodiumView(
+                          session: widget.session,
+                          room: room,
+                          players: _players,
+                          isHost: _isHost,
+                          service: _service,
+                          onLeave: _leaveNow,
                         ),
                     },
                   ),
@@ -312,27 +332,6 @@ class _CodeCard extends StatelessWidget {
           ]),
         ),
       ),
-    );
-  }
-}
-
-class _InfoBanner extends StatelessWidget {
-  const _InfoBanner(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: scheme.primaryContainer,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(text,
-          textAlign: TextAlign.center,
-          style: TextStyle(color: scheme.onPrimaryContainer)),
     );
   }
 }

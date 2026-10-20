@@ -7,7 +7,7 @@ Flutter (Android + web) · Supabase (Auth anonyme, Postgres, Realtime, Storage).
 ## Mise en place Supabase
 
 1. **Authentication → Sign In / Providers** : activer *Allow anonymous sign-ins*.
-2. **SQL Editor** : lancer dans l'ordre `supabase/01_schema.sql`, `02_cleanup.sql`, `03_rejoin.sql` (relançables sans risque).
+2. **SQL Editor** : lancer dans l'ordre `supabase/01_schema.sql`, `02_cleanup.sql`, `03_rejoin.sql`, `04_rounds.sql` (relançables sans risque).
 3. Récupérer l'URL du projet et la clé `anon` (Project Settings → API).
 
 Toutes les tables sont préfixées `pr_` et le bucket s'appelle `pr-photos` : le schéma peut cohabiter avec un autre projet dans la même base.
