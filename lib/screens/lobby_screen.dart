@@ -18,40 +18,76 @@ class LobbyScreen extends StatefulWidget {
   State<LobbyScreen> createState() => _LobbyScreenState();
 }
 
-class _LobbyScreenState extends State<LobbyScreen> {
+class _LobbyScreenState extends State<LobbyScreen> with WidgetsBindingObserver {
   final _service = RoomService.instance();
   StreamSubscription<Room?>? _roomSub;
   StreamSubscription<List<Player>>? _playersSub;
+  Timer? _retryTimer;
+  int _retryDelay = 2;
 
   Room? _room;
   bool _roomLoaded = false;
   List<Player> _players = const [];
   bool _leaving = false;
+  bool _reconnecting = false;
 
   bool get _isHost => _room != null && _room!.hostId == _service.userId;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _subscribe();
+  }
+
+  /// (Ré)ouvre les flux Realtime du salon et des joueurs.
+  void _subscribe() {
+    _retryTimer?.cancel();
+    _roomSub?.cancel();
+    _playersSub?.cancel();
+
     _roomSub = _service.watchRoom(widget.session.roomId).listen(
           _onRoom,
-          onError: (Object e) => _snack('Connexion perdue : $e'),
+          onError: _onStreamError,
         );
     _playersSub = _service.watchPlayers(widget.session.roomId).listen(
       (players) {
         if (!mounted) return;
+        _onConnected();
         setState(() => _players = players);
         // Exclu par l'hôte ?
         if (_roomLoaded && !players.any((p) => p.id == widget.session.playerId)) {
           _exit('Tu as été retiré du salon.');
         }
       },
-      onError: (Object e) => _snack('Connexion perdue : $e'),
+      onError: _onStreamError,
     );
+  }
+
+  void _onConnected() {
+    _retryDelay = 2;
+    if (_reconnecting) setState(() => _reconnecting = false);
+  }
+
+  /// Coupure (onglet en arrière-plan, changement de réseau…) : on réessaie
+  /// avec un délai croissant (2 s, 4 s, 8 s, puis 15 s max).
+  void _onStreamError(Object _) {
+    if (!mounted || _leaving) return;
+    if (!_reconnecting) setState(() => _reconnecting = true);
+    if (_retryTimer?.isActive ?? false) return;
+    _retryTimer = Timer(Duration(seconds: _retryDelay), _subscribe);
+    _retryDelay = _retryDelay * 2 > 15 ? 15 : _retryDelay * 2;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Retour au premier plan : on rafraîchit tout de suite.
+    if (state == AppLifecycleState.resumed && !_leaving) _subscribe();
   }
 
   void _onRoom(Room? room) {
     if (!mounted) return;
+    _onConnected();
     if (room == null) {
       if (_roomLoaded) _exit('Le salon a été fermé par l\'hôte.');
       return;
@@ -64,6 +100,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _retryTimer?.cancel();
     _roomSub?.cancel();
     _playersSub?.cancel();
     super.dispose();
@@ -154,6 +192,21 @@ class _LobbyScreenState extends State<LobbyScreen> {
             icon: const Icon(Icons.close_rounded),
             onPressed: _confirmAndLeave,
           ),
+          bottom: _reconnecting
+              ? PreferredSize(
+                  preferredSize: const Size.fromHeight(30),
+                  child: Container(
+                    width: double.infinity,
+                    height: 30,
+                    alignment: Alignment.center,
+                    color: theme.colorScheme.errorContainer,
+                    child: Text(
+                      'Connexion perdue, reconnexion…',
+                      style: TextStyle(color: theme.colorScheme.onErrorContainer),
+                    ),
+                  ),
+                )
+              : null,
         ),
         body: room == null
             ? const Center(child: CircularProgressIndicator())
