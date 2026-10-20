@@ -1,5 +1,10 @@
 # Photo Roulette — Changelog
 
+## v0.3.3
+_Version 0.3.3+6._
+
+- **APK** : corrige le plantage au démarrage (« Connexion au serveur impossible » / écran noir) causé par le stockage local en version Android.
+
 ## v0.3.2
 _Version 0.3.2+5._
 

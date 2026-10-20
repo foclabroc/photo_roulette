@@ -79,6 +79,9 @@ jobs:
               buildTypes {
                   getByName("release") {
                       signingConfig = signingConfigs.getByName("foclabroc")
+                      // Pas de R8 : il cassait des plugins Kotlin en release (APK un peu plus gros)
+                      isMinifyEnabled = false
+                      isShrinkResources = false
                   }
               }
           }

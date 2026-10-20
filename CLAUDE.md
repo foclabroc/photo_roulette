@@ -38,6 +38,8 @@ Jeu de soirée « à qui est cette photo ? ». Flutter (Android + web), Supabase
 - APK : `apk.yml` à la main (Actions → APK Android → Run workflow, cocher « publier »). Avant : monter la version dans `lib/update_check.dart` (`kPhotoRouletteVersion`) **et** `pubspec.yaml` (`x.y.z+n`) — la CI refuse si elles diffèrent — et ajouter la section au `CHANGELOG.md`. Une release `v<version>` par version.
 - Signature : secret `DEBUG_KEYSTORE_B64` (même clé que Pixel Trade, alias `androiddebugkey`, mot de passe `android`, empreinte `457526b6…e38ffb` vérifiée en CI). apk.yml l'écrit dans `$RUNNER_TEMP/foc.keystore` et **ajoute un bloc `signingConfigs` explicite** à la fin du `android/app/build.gradle.kts` généré : la déposer en `~/.android/debug.keystore` ne marche pas sur les machines GitHub (Gradle génère une autre clé debug).
 
+- APK : `shared_preferences_android` figé à 2.4.28 (`dependency_overrides`, comme Pixel Trade) et R8 désactivé (`isMinifyEnabled = false` injecté par apk.yml) : sinon NoSuchMethodError `SharedPreferencesApiRegistrar.getAll` au démarrage (écran noir).
+
 ## Règles de travail
 - Toujours montrer les changements et attendre le feu vert avant de pousser.
 - Fichiers SQL relançables, fournis avant de pousser le code qui en dépend (lancés à la main dans Supabase).

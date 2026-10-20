@@ -1,7 +1,7 @@
 name: photo_roulette
 description: "Photo Roulette — devine à qui appartient la photo !"
 publish_to: 'none'
-version: 0.3.2+5
+version: 0.3.3+6
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -17,6 +17,11 @@ dependencies:
   path_provider: ^2.1.0
   url_launcher: ^6.2.0
   open_filex: ^4.3.2
+
+# Version Android de shared_preferences figée (même que Pixel Trade) : les plus récentes
+# plantent en APK (NoSuchMethodError SharedPreferencesApiRegistrar.getAll après R8).
+dependency_overrides:
+  shared_preferences_android: 2.4.28
 
 dev_dependencies:
   flutter_test:
