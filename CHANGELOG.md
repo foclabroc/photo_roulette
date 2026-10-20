@@ -1,5 +1,10 @@
 # Photo Roulette — Changelog
 
+## v0.3.2
+_Version 0.3.2+5._
+
+- **Démarrage** : écran d'attente immédiat au lieu d'un écran noir ; si le serveur ne répond pas, message d'erreur et bouton « Réessayer ».
+
 ## v0.3.1
 _Version 0.3.1+4._
 
